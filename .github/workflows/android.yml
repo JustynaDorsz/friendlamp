@@ -56,8 +56,21 @@ jobs:
       - name: Publish the APK as a release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "build-${{ github.run_number }}" FriendLamp.apk version.txt
-          --title "FriendLamp build ${{ github.run_number }}"
-          --notes "Install: download the APK on the phone and open it."
-          --latest
+        run: |
+          # GitHub's release API sometimes answers with a server error: try a few times.
+          TAG="build-${{ github.run_number }}"
+          for attempt in 1 2 3 4 5 6; do
+            if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+              # A previous attempt created the release: make sure both files are on it.
+              gh release upload "$TAG" FriendLamp.apk version.txt --clobber --repo "${{ github.repository }}" && exit 0
+            else
+              gh release create "$TAG" FriendLamp.apk version.txt \
+                --repo "${{ github.repository }}" \
+                --title "Build ${{ github.run_number }}" \
+                --notes "Install: download the APK on the phone and open it." \
+                --latest && exit 0
+            fi
+            echo "Attempt $attempt failed, waiting before the next one"
+            sleep 30
+          done
+          exit 1
