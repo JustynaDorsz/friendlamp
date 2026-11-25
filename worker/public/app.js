@@ -4,8 +4,8 @@
   const STORAGE_KEY = "friendlamp";
   const AUTO_PING_GAP_MS = 30 * 1000; // opening the app twice within this time sends once
   // How long the lamp stays lit after the other person thinks of you.
-  // TESTING VALUE: 2 minutes. For normal use change to 60 * 60 * 1000 (here and in sw.js).
-  const LIT_MS = 2 * 60 * 1000;
+  // Keep equal to LIT_MS in sw.js. (The Android app has its own setting.)
+  const LIT_MS = 30 * 60 * 1000;
   const QUICK_CLOSE_MS = 1500; // quick send: how long "Sent" shows before the app closes
 
   const $ = (id) => document.getElementById(id);
@@ -114,7 +114,7 @@
       headline = other.name + " hasn’t lit your lamp yet";
     } else {
       const lit = Date.now() + clockOffset - other.lastPing < LIT_MS;
-      headline = other.name + (lit ? " is thinking of you" : " was thinking of you");
+      headline = (lit ? "Status check from " : "Last status check from ") + other.name;
       times = other.history && other.history.length ? other.history : [other.lastPing];
       glow = lit ? 1 : 0;
     }

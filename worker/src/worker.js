@@ -230,7 +230,8 @@ async function handleApi(request, env, url) {
         me.last_ping = now;
 
         // Notify every device of the other person.
-        const payload = { title: "FriendLamp", body: `${me.name} is thinking of you`, ts: now };
+        // The notification text carries no names.
+        const payload = { title: "FriendLamp", body: "Status check", ts: now };
         const results = await Promise.all(
           theirs
             .filter((m) => m.subscription)

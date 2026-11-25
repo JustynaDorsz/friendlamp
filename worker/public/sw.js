@@ -3,7 +3,7 @@
 // How long the "lit" signs (notification, icon badge) stay. Keep equal to LIT_MS in app.js.
 // A service worker can only wait a few minutes, so anything longer is cleared
 // when the app is next opened instead.
-const LIT_MS = 2 * 60 * 1000;
+const LIT_MS = 30 * 60 * 1000;
 const MAX_WAIT_MS = 4 * 60 * 1000;
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -18,7 +18,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
       await self.registration.showNotification(data.title || "FriendLamp", {
-        body: data.body || "Your friend is thinking of you",
+        body: data.body || "Status check",
         icon: "icons/icon-192.png",
         badge: "icons/badge-96.png",
         tag: "friendlamp",
