@@ -25,6 +25,10 @@ object Api {
             connection.requestMethod = method
             connection.connectTimeout = timeoutMs
             connection.readTimeout = timeoutMs
+            // A fresh connection every time: one kept from an earlier call can be dead
+            // by the time the widget is tapped again.
+            connection.setRequestProperty("Connection", "close")
+            connection.useCaches = false
             if (body != null) {
                 connection.doOutput = true
                 connection.setRequestProperty("Content-Type", "application/json")

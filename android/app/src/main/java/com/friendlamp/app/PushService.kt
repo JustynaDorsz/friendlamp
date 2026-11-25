@@ -91,13 +91,31 @@ object Push {
 
 object Notifier {
     private const val CHANNEL = "lamp"
+    private const val CHANNEL_SENDING = "sending"
     private const val ID = 1
+    const val SENDING_ID = 2
 
     fun createChannel(context: Context) {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(CHANNEL, "Thinking of you", NotificationManager.IMPORTANCE_HIGH)
         channel.description = "When your friend lights your lamp"
-        context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+        manager.createNotificationChannel(channel)
+        val sending = NotificationChannel(CHANNEL_SENDING, "Sending", NotificationManager.IMPORTANCE_MIN)
+        sending.description = "Shown for a moment while a widget tap is being sent"
+        sending.setShowBadge(false)
+        manager.createNotificationChannel(sending)
     }
+
+    /** The brief notice Android requires while the widget tap is being sent. */
+    fun sending(context: Context): android.app.Notification =
+        NotificationCompat.Builder(context, CHANNEL_SENDING)
+            .setSmallIcon(R.drawable.ic_stat_lamp)
+            .setContentTitle("FriendLamp")
+            .setContentText("Sending\u2026")
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setOngoing(true)
+            .setSilent(true)
+            .build()
 
     /** Shows the notification; it removes itself when the lamp goes dark. */
     @SuppressLint("MissingPermission")

@@ -54,6 +54,11 @@ class Store(context: Context) {
         get() = string("fcmRegistered")
         set(v) = put("fcmRegistered", v)
 
+    /** The last thing that went wrong, shown on the app screen to help with fixing it. */
+    var lastError: String?
+        get() = string("lastError")
+        set(v) = put("lastError", v)
+
     /** Forget the pairing but keep the device id. */
     fun reset() {
         val keep = id

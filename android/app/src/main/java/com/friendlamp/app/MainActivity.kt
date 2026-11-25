@@ -92,7 +92,9 @@ class MainActivity : Activity() {
             if (other == null) "" else times.drop(1).joinToString("\n") { Lamp.whenText(it) }
         findViewById<TextView>(R.id.mine).text =
             if (other != null && store.myLastPing > 0L) "You lit $other’s lamp " + Lamp.whenText(store.myLastPing) else ""
-        findViewById<TextView>(R.id.status).text = pushStatus
+        val problem = store.lastError
+        findViewById<TextView>(R.id.status).text =
+            if (problem == null) pushStatus else "$pushStatus\n\nLast problem: $problem"
     }
 
     // ---------- Actions ----------
@@ -135,7 +137,11 @@ class MainActivity : Activity() {
     private fun send() {
         background {
             val state = Api.call(this, "ping")
-            Lamp.applyState(this, state)
+            try {
+                Lamp.applyState(this, state)
+            } catch (e: Exception) {
+                Lamp.remember(this, "after sending from the app", e)
+            }
             val other = state.optJSONObject("other")
             val message = when {
                 other == null -> "Your friend hasn’t joined yet"

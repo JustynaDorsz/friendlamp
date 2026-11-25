@@ -44,22 +44,20 @@ class LampWidget : AppWidgetProvider() {
             render(context)
             return
         }
-        render(context, "Sending…")
+        render(context, "Sending\u2026")
+        // Preferred: a short foreground service. The system lets it use the network
+        // even when the app is in the background with battery or data saver on.
+        try {
+            context.startForegroundService(Intent(context, SendService::class.java))
+            return
+        } catch (e: Exception) {
+            Lamp.remember(context, "starting the send service", e)
+        }
+        // Fallback: send from here, within the few seconds a receiver is allowed.
         val pending = goAsync()
         Lamp.io.execute {
             try {
-                val label = try {
-                    val state = Api.call(context, "ping", null, 3500)
-                    Lamp.applyState(context, state)
-                    if (state.optBoolean("repeat")) "Already sent" else "Sent"
-                } catch (e: ApiException) {
-                    if (e.status == 403) "Open app to set up" else "Failed"
-                } catch (e: Exception) {
-                    "No connection"
-                }
-                render(context, label)
-                Thread.sleep(1500)
-                render(context)
+                finishSend(context, Lamp.send(context, 3000))
             } finally {
                 pending.finish()
             }
@@ -69,6 +67,13 @@ class LampWidget : AppWidgetProvider() {
     companion object {
         const val ACTION_SEND = "com.friendlamp.app.SEND"
         const val ACTION_UNLIT = "com.friendlamp.app.UNLIT"
+
+        /** Shows the result on the widget for a moment, then the normal label again. */
+        fun finishSend(context: Context, label: String) {
+            render(context, label)
+            Thread.sleep(1500)
+            render(context)
+        }
 
         /** Redraws every FriendLamp widget. `flash` temporarily replaces the label. */
         fun render(context: Context, flash: String? = null) {

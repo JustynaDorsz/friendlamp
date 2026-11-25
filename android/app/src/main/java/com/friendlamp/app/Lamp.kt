@@ -3,6 +3,8 @@ package com.friendlamp.app
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -63,8 +65,53 @@ object Lamp {
     }
 
     fun changed(context: Context) {
-        LampWidget.render(context)
+        try {
+            LampWidget.render(context)
+        } catch (e: Exception) {
+            remember(context, "widget", e)
+        }
         onChange?.invoke()
+    }
+
+    /**
+     * Sends "thinking of you" and returns the short label for the widget.
+     * Tries twice. Call from a background thread.
+     */
+    fun send(context: Context, timeoutMs: Int = 8000): String {
+        var problem: Exception? = null
+        for (attempt in 1..2) {
+            try {
+                val state = Api.call(context, "ping", null, timeoutMs)
+                // The tap has been delivered. A problem while redrawing must not hide that.
+                try {
+                    applyState(context, state)
+                    Store(context).lastError = null
+                } catch (e: Exception) {
+                    remember(context, "after sending", e)
+                }
+                return if (state.optBoolean("repeat")) "Already sent" else "Sent"
+            } catch (e: ApiException) {
+                return if (e.status == 403) "Open app to set up" else "Failed (${e.status})"
+            } catch (e: Exception) {
+                problem = e
+                if (attempt == 1) Thread.sleep(500)
+            }
+        }
+        val failure = problem ?: return "Failed"
+        remember(context, "sending", failure)
+        return when (failure) {
+            is UnknownHostException -> "No internet"
+            is SocketTimeoutException -> "Timed out"
+            else -> failure.javaClass.simpleName
+        }
+    }
+
+    /** Keeps a description of a problem so it can be read on the app screen. */
+    fun remember(context: Context, where: String, e: Exception) {
+        val place = e.stackTrace.firstOrNull { it.className.startsWith("com.friendlamp") }
+        val at = if (place != null) " at ${place.fileName}:${place.lineNumber}" else ""
+        Store(context).lastError =
+            clock(System.currentTimeMillis()) + " while $where: ${e.javaClass.simpleName}: ${e.message}$at"
     }
 
     /** Asks the server for the current state. Call from a background thread. */
