@@ -9,9 +9,18 @@ class ApiException(val status: Int, message: String) : Exception(message)
 
 /** Talks to the FriendLamp server. Call from a background thread. */
 object Api {
-    /** A request made as this device: adds the code and the device id. */
-    fun call(context: Context, path: String, extra: JSONObject? = null, timeoutMs: Int = 8000): JSONObject {
-        val store = Store(context)
+    /**
+     * A request made as this device: adds the code and the device id of the
+     * given profile (the one in use if none is named).
+     */
+    fun call(
+        context: Context,
+        path: String,
+        extra: JSONObject? = null,
+        timeoutMs: Int = 8000,
+        profile: String? = null
+    ): JSONObject {
+        val store = Store(context, profile)
         val body = JSONObject().put("code", store.code ?: "").put("id", store.id)
         if (extra != null) {
             for (key in extra.keys()) body.put(key, extra.get(key))

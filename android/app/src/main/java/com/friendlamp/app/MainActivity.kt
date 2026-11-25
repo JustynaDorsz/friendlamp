@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import org.json.JSONArray
@@ -27,11 +28,15 @@ class MainActivity : Activity() {
         }
     }
 
+    /** What the profile chips currently show, so they are rebuilt only when it changes. */
+    private var shownProfiles = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         findViewById<Button>(R.id.start).setOnClickListener { join() }
+        findViewById<TextView>(R.id.cancelSetup).setOnClickListener { cancelSetup() }
         findViewById<ImageView>(R.id.lamp).setOnClickListener { send() }
         findViewById<TextView>(R.id.settings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -63,9 +68,14 @@ class MainActivity : Activity() {
 
     private fun render() {
         val store = Store(this)
+        renderProfiles(store)
         findViewById<View>(R.id.setup).visibility = if (store.configured) View.GONE else View.VISIBLE
         findViewById<View>(R.id.lampGroup).visibility = if (store.configured) View.VISIBLE else View.GONE
-        if (!store.configured) return
+        if (!store.configured) {
+            // A profile that is being added can be abandoned if there is another one to go back to.
+            findViewById<View>(R.id.cancelSetup).visibility = if (store.profiles.size > 1) View.VISIBLE else View.GONE
+            return
+        }
 
         val other = store.otherName
         val color = store.lampColor
@@ -103,9 +113,28 @@ class MainActivity : Activity() {
         status.visibility = if (problem == null) View.GONE else View.VISIBLE
     }
 
+    /** The row of profiles at the top; tapping one switches to it. */
+    private fun renderProfiles(store: Store) {
+        val row = findViewById<LinearLayout>(R.id.profiles)
+        val list = store.profiles
+        val signature = list.joinToString("|") { it.key + ":" + it.label } + ">" + store.profile
+        if (signature == shownProfiles) return
+        shownProfiles = signature
+        row.removeAllViews()
+        row.visibility = if (list.size > 1) View.VISIBLE else View.GONE
+        if (list.size <= 1) return
+        for (profile in list) {
+            row.addView(Ui.chip(this, profile.label, profile.key == store.profile) {
+                Lamp.switchTo(this, profile.key)
+                render()
+            })
+        }
+    }
+
     // ---------- Actions ----------
 
     private fun join() {
+        val label = findViewById<EditText>(R.id.profileLabel).text.toString().trim()
         val name = findViewById<EditText>(R.id.name).text.toString().trim()
         val code = findViewById<EditText>(R.id.code).text.toString().trim()
         val error = findViewById<TextView>(R.id.setupError)
@@ -123,9 +152,13 @@ class MainActivity : Activity() {
                 val state = Api.request("POST", "join", body)
                 store.name = name
                 store.code = code
-                Lamp.applyState(this, state)
+                if (label.isNotEmpty()) store.renameProfile(store.profile, label)
+                Lamp.applyState(this, state, store.profile)
                 ui.post {
                     button.isEnabled = true
+                    findViewById<EditText>(R.id.profileLabel).setText("")
+                    findViewById<EditText>(R.id.name).setText("")
+                    findViewById<EditText>(R.id.code).setText("")
                     render()
                     askForNotifications()
                 }
@@ -140,11 +173,22 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Drops the profile that was being added and goes back to another one. */
+    private fun cancelSetup() {
+        val store = Store(this)
+        if (store.configured || store.profiles.size <= 1) return
+        store.removeProfile(store.profile)
+        Lamp.changed(this)
+        Lamp.io.execute { Lamp.activate(this) }
+        render()
+    }
+
     private fun send() {
         background {
-            val state = Api.call(this, "ping")
+            val profile = Store(this).profile
+            val state = Api.call(this, "ping", null, 8000, profile)
             try {
-                Lamp.applyState(this, state)
+                Lamp.applyState(this, state, profile)
             } catch (e: Exception) {
                 Lamp.remember(this, "after sending from the app", e)
             }
@@ -169,8 +213,8 @@ class MainActivity : Activity() {
                 work()
             } catch (e: ApiException) {
                 if (e.status == 403) {
-                    // The server no longer knows this phone.
-                    Store(this).reset()
+                    // The server no longer knows this phone for this profile.
+                    Store(this).clearConnection()
                     Lamp.changed(this)
                     ui.post { render() }
                 }

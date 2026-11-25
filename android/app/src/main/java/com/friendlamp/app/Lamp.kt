@@ -21,9 +21,9 @@ object Lamp {
     @Volatile
     var onChange: (() -> Unit)? = null
 
-    /** Stores what the server reported and redraws the widget. */
-    fun applyState(context: Context, state: JSONObject) {
-        val store = Store(context)
+    /** Stores what the server reported for a profile and redraws the widget. */
+    fun applyState(context: Context, state: JSONObject, profile: String? = null) {
+        val store = Store(context, profile)
         // Server times are converted to this phone's clock.
         val skew = System.currentTimeMillis() - state.optLong("now", System.currentTimeMillis())
         val mine = state.optJSONObject("me")?.optLong("lastPing", 0L) ?: 0L
@@ -53,16 +53,34 @@ object Lamp {
         changed(context)
     }
 
-    /** The other person just thought of you (a push arrived). */
-    fun received(context: Context, name: String, timestamp: Long, sentAt: Long) {
-        val store = Store(context)
+    /**
+     * A push arrived. `to` is the device id it was sent to, which tells the
+     * profile. Returns false when it is not for the profile in use; such a
+     * push is ignored and that profile is unregistered on the server.
+     */
+    fun received(context: Context, name: String, timestamp: Long, sentAt: Long, to: String?): Boolean {
+        val current = Store(context)
+        val target = if (to.isNullOrEmpty()) current.profile else current.profileForDevice(to)
+        if (target != current.profile) {
+            if (target != null) {
+                io.execute {
+                    try {
+                        Push.unregister(context, target)
+                    } catch (e: Exception) {
+                        // Tried again the next time one arrives.
+                    }
+                }
+            }
+            return false
+        }
+
         val now = System.currentTimeMillis()
-        store.otherName = name
-        store.otherLastPing = timestamp
-        store.litBy = "other"
-        store.litAt = minOf(if (sentAt > 0L) sentAt else now, now)
+        current.otherName = name
+        current.otherLastPing = timestamp
+        current.litBy = "other"
+        current.litAt = minOf(if (sentAt > 0L) sentAt else now, now)
         val old = try {
-            JSONArray(store.history)
+            JSONArray(current.history)
         } catch (e: Exception) {
             JSONArray()
         }
@@ -70,8 +88,9 @@ object Lamp {
         for (i in 0 until minOf(old.length(), 19)) {
             if (old.optLong(i) != timestamp) updated.put(old.optLong(i))
         }
-        store.history = updated.toString()
+        current.history = updated.toString()
         changed(context)
+        return true
     }
 
     fun changed(context: Context) {
@@ -84,17 +103,50 @@ object Lamp {
     }
 
     /**
+     * Makes another profile the one in use: the old one stops receiving, the
+     * new one starts. Works offline too; a push for the old profile that still
+     * arrives is ignored.
+     */
+    fun switchTo(context: Context, key: String) {
+        val app = context.applicationContext
+        val old = Store(app).profile
+        if (old == key) return
+        Store(app).active = key
+        changed(app)
+        io.execute {
+            try {
+                Push.unregister(app, old)
+            } catch (e: Exception) {
+                // Its pushes are ignored anyway while it is not in use.
+            }
+            activate(app)
+        }
+    }
+
+    /** Brings the profile in use up to date and registers it for pushes. Background thread. */
+    fun activate(context: Context) {
+        try {
+            refresh(context)
+            Store(context).pushStatus = Push.sync(context)
+        } catch (e: Exception) {
+            remember(context, "switching profile", e)
+        }
+        changed(context)
+    }
+
+    /**
      * Sends "thinking of you" and returns the short label for the widget.
      * Tries twice. Call from a background thread.
      */
     fun send(context: Context, timeoutMs: Int = 8000): String {
+        val profile = Store(context).profile
         var problem: Exception? = null
         for (attempt in 1..2) {
             try {
-                val state = Api.call(context, "ping", null, timeoutMs)
+                val state = Api.call(context, "ping", null, timeoutMs, profile)
                 // The tap has been delivered. A problem while redrawing must not hide that.
                 try {
-                    applyState(context, state)
+                    applyState(context, state, profile)
                     Store(context).lastError = null
                 } catch (e: Exception) {
                     remember(context, "after sending", e)
@@ -124,10 +176,11 @@ object Lamp {
             clock(System.currentTimeMillis()) + " while $where: ${e.javaClass.simpleName}: ${e.message}$at"
     }
 
-    /** Asks the server for the current state. Call from a background thread. */
+    /** Asks the server for the current state of the profile in use. Background thread. */
     fun refresh(context: Context) {
-        if (!Store(context).configured) return
-        applyState(context, Api.call(context, "state"))
+        val store = Store(context)
+        if (!store.configured) return
+        applyState(context, Api.call(context, "state", null, 8000, store.profile), store.profile)
     }
 
     /** "5 min ago", or the clock time / date for older entries. */

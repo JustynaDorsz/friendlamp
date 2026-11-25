@@ -2,6 +2,7 @@ package com.friendlamp.app
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -16,17 +17,20 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 
-/** Colors, how long the lamp stays lit, and everything about this phone. */
+/** Colors, how long the lamp stays lit, profiles and updates. */
 class SettingsActivity : Activity() {
     private val ui = Handler(Looper.getMainLooper())
-    private var resetArmedUntil = 0L
+
+    /** The profile whose "Remove" was tapped once, and until when a second tap confirms it. */
+    private var removeArmed = ""
+    private var removeArmedUntil = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
         findViewById<TextView>(R.id.done).setOnClickListener { finish() }
-        findViewById<TextView>(R.id.reset).setOnClickListener { reset() }
+        findViewById<TextView>(R.id.addProfile).setOnClickListener { addProfile() }
         findViewById<TextView>(R.id.update).setOnClickListener { updateTapped() }
     }
 
@@ -41,7 +45,7 @@ class SettingsActivity : Activity() {
         Lamp.onChange = null
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int): Int = Ui.dp(this, value)
 
     // ---------- Drawing ----------
 
@@ -65,7 +69,7 @@ class SettingsActivity : Activity() {
         durations.removeAllViews()
         for (minutes in Config.LIT_CHOICES) {
             val label = if (minutes < 60) "$minutes min" else "${minutes / 60} h"
-            durations.addView(chip(label, minutes == store.litMinutes) {
+            durations.addView(Ui.chip(this, label, minutes == store.litMinutes) {
                 store.litMinutes = minutes
                 changed()
             })
@@ -74,15 +78,14 @@ class SettingsActivity : Activity() {
             "The lamp goes grey " + (if (store.litMinutes < 60) "${store.litMinutes} minutes" else "${store.litMinutes / 60} h") +
                 " after the last tap."
 
-        findViewById<TextView>(R.id.who).text =
-            when {
-                !store.configured -> "Not set up yet."
-                store.otherName != null -> "Connected to the other phone."
-                else -> "Waiting for the other phone."
-            }
+        renderProfiles(store)
+        findViewById<TextView>(R.id.who).text = when {
+            !store.configured -> "This profile is not set up yet."
+            store.otherName != null -> "Connected to the other phone."
+            else -> "Waiting for the other phone."
+        }
         findViewById<TextView>(R.id.push).text =
             "Notifications: " + store.pushStatus.ifEmpty { "open the app once to turn them on." }
-        findViewById<View>(R.id.reset).visibility = if (store.configured) View.VISIBLE else View.GONE
 
         val update = findViewById<TextView>(R.id.update)
         val status = store.updateStatus ?: ("Build " + Updater.installedBuild(this))
@@ -92,6 +95,53 @@ class SettingsActivity : Activity() {
         } else {
             update.text = "$status\nTap here to allow automatic updates."
             update.setTextColor(getColor(R.color.warm))
+        }
+    }
+
+    /** One row per profile: tap the name to use it, "Remove" to delete it. */
+    private fun renderProfiles(store: Store) {
+        val list = findViewById<LinearLayout>(R.id.profilesList)
+        list.removeAllViews()
+        for (profile in store.profiles) {
+            val selected = profile.key == store.profile
+            val row = LinearLayout(this)
+            row.orientation = LinearLayout.HORIZONTAL
+            row.gravity = Gravity.CENTER_VERTICAL
+
+            val dot = View(this)
+            val circle = GradientDrawable()
+            circle.shape = GradientDrawable.OVAL
+            if (selected) {
+                circle.setColor(getColor(R.color.warm))
+            } else {
+                circle.setColor(0)
+                circle.setStroke(dp(2), getColor(R.color.muted))
+            }
+            dot.background = circle
+            row.addView(dot, LinearLayout.LayoutParams(dp(14), dp(14)))
+
+            val name = TextView(this)
+            name.text = if (selected) profile.label + "  (in use)" else profile.label
+            name.textSize = 16f
+            name.setTextColor(getColor(if (selected) R.color.ink else R.color.muted))
+            if (selected) name.setTypeface(name.typeface, Typeface.BOLD)
+            name.setPadding(dp(12), dp(12), dp(8), dp(12))
+            row.addView(name, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+
+            val remove = TextView(this)
+            val armed = removeArmed == profile.key && System.currentTimeMillis() < removeArmedUntil
+            remove.text = if (armed) "Tap again to remove" else "Remove"
+            remove.textSize = 13f
+            remove.setTextColor(getColor(R.color.error))
+            remove.setPadding(dp(10), dp(12), 0, dp(12))
+            remove.setOnClickListener { removeTapped(profile.key) }
+            row.addView(remove)
+
+            row.setOnClickListener {
+                Lamp.switchTo(this, profile.key)
+                render()
+            }
+            list.addView(row)
         }
     }
 
@@ -116,29 +166,6 @@ class SettingsActivity : Activity() {
         }
     }
 
-    /** A rounded choice button. */
-    private fun chip(label: String, selected: Boolean, onPick: () -> Unit): View {
-        val view = TextView(this)
-        view.text = label
-        view.textSize = 14f
-        view.gravity = Gravity.CENTER
-        view.setTextColor(if (selected) 0xFF2A1A05.toInt() else getColor(R.color.ink))
-        val shape = GradientDrawable()
-        shape.cornerRadius = dp(18).toFloat()
-        if (selected) {
-            shape.setColor(getColor(R.color.warm))
-        } else {
-            shape.setColor(getColor(R.color.bg))
-            shape.setStroke(dp(1), getColor(R.color.line))
-        }
-        view.background = shape
-        view.setOnClickListener { onPick() }
-        val params = LinearLayout.LayoutParams(0, dp(38), 1f)
-        params.marginEnd = dp(6)
-        view.layoutParams = params
-        return view
-    }
-
     /** A setting changed: redraw this screen and the widget. */
     private fun changed() {
         Lamp.changed(this)
@@ -147,6 +174,41 @@ class SettingsActivity : Activity() {
 
     // ---------- Actions ----------
 
+    /** Creates an empty profile, switches to it, and returns to the main screen to set it up. */
+    private fun addProfile() {
+        val store = Store(this)
+        if (!store.configured) {
+            // The profile in use is still empty: set that one up first.
+            finish()
+            return
+        }
+        val key = store.addProfile("Profile " + (store.profiles.size + 1))
+        Lamp.switchTo(this, key)
+        finish()
+    }
+
+    private fun removeTapped(key: String) {
+        if (removeArmed != key || System.currentTimeMillis() > removeArmedUntil) {
+            removeArmed = key
+            removeArmedUntil = System.currentTimeMillis() + 4000
+            render()
+            ui.postDelayed({ render() }, 4100)
+            return
+        }
+        removeArmed = ""
+        val wasInUse = Store(this).profile == key
+        Lamp.io.execute {
+            try {
+                if (Store(this, key).configured) Api.call(this, "leave", null, 8000, key)
+            } catch (e: Exception) {
+                // Removing it on this phone is enough.
+            }
+            Store(this).removeProfile(key)
+            if (wasInUse) Lamp.activate(this) else Lamp.changed(this)
+            ui.post { render() }
+        }
+    }
+
     private fun updateTapped() {
         if (Updater.allowed(this)) {
             Updater.checkSoon(this, force = true)
@@ -154,28 +216,6 @@ class SettingsActivity : Activity() {
         } else {
             // Opens Android's "Install unknown apps" switch for FriendLamp.
             startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
-        }
-    }
-
-    private fun reset() {
-        val label = findViewById<TextView>(R.id.reset)
-        if (System.currentTimeMillis() > resetArmedUntil) {
-            resetArmedUntil = System.currentTimeMillis() + 4000
-            label.text = "Tap again to disconnect this phone"
-            ui.postDelayed({ label.text = "Disconnect this phone" }, 4000)
-            return
-        }
-        resetArmedUntil = 0L
-        label.text = "Disconnect this phone"
-        Lamp.io.execute {
-            try {
-                Api.call(this, "leave")
-            } catch (e: Exception) {
-                // Leaving locally is enough.
-            }
-            Store(this).reset()
-            Lamp.changed(this)
-            ui.post { finish() }
         }
     }
 }

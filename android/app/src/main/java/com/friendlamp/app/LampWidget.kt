@@ -84,10 +84,13 @@ class LampWidget : AppWidgetProvider() {
 
             val store = Store(app)
             val color = store.lampColor
+            // With several profiles the label says which one is in use.
+            val profile = if (store.profiles.size > 1) store.label else ""
             val label = flash ?: when {
                 !store.configured -> "Tap to set up"
+                color != null && profile.isNotEmpty() -> profile + " \u00b7 " + Lamp.clock(store.litAt)
                 color != null -> Lamp.clock(store.litAt)
-                else -> ""
+                else -> profile
             }
 
             val views = RemoteViews(app.packageName, R.layout.widget_lamp)

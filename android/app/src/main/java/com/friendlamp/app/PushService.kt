@@ -33,8 +33,10 @@ class PushService : FirebaseMessagingService() {
         if (data["type"] != "ping") return
         val name = data["name"] ?: "Your friend"
         val timestamp = data["ts"]?.toLongOrNull() ?: System.currentTimeMillis()
-        Lamp.received(applicationContext, name, timestamp, message.sentTime)
-        Notifier.show(applicationContext)
+        // Only the profile in use lights the lamp and shows a notification.
+        if (Lamp.received(applicationContext, name, timestamp, message.sentTime, data["to"])) {
+            Notifier.show(applicationContext)
+        }
     }
 }
 
@@ -79,13 +81,23 @@ object Push {
         return "On for this device."
     }
 
+    /** Registers this phone for pushes of the profile in use. */
     fun register(context: Context, token: String) {
         val store = Store(context)
         if (!store.configured) return
         val marker = token + "|" + store.code + "|" + store.name
         if (store.fcmRegistered == marker) return
-        Api.call(context, "subscribe", JSONObject().put("subscription", JSONObject().put("fcm", token)))
+        val body = JSONObject().put("subscription", JSONObject().put("fcm", token))
+        Api.call(context, "subscribe", body, 8000, store.profile)
         store.fcmRegistered = marker
+    }
+
+    /** Tells the server to stop sending pushes for a profile that is not in use. */
+    fun unregister(context: Context, profile: String) {
+        val store = Store(context, profile)
+        if (!store.configured) return
+        Api.call(context, "subscribe", JSONObject().put("subscription", JSONObject.NULL), 8000, profile)
+        store.fcmRegistered = null
     }
 }
 

@@ -180,7 +180,11 @@ async function handleApi(request, env, url) {
     case "/api/subscribe": {
       const sub = body.subscription;
       let stored;
-      if (sub && typeof sub.fcm === "string" && sub.fcm.length >= 20 && sub.fcm.length < 4096) {
+      if (sub === null) {
+        // Unsubscribe: this device stays a member but gets no pushes
+        // (the Android app does this for a profile that is not in use).
+        stored = null;
+      } else if (sub && typeof sub.fcm === "string" && sub.fcm.length >= 20 && sub.fcm.length < 4096) {
         // The Android app: a Firebase registration token.
         stored = JSON.stringify({ fcm: sub.fcm });
       } else {
@@ -239,7 +243,7 @@ async function handleApi(request, env, url) {
               try {
                 const target = JSON.parse(m.subscription);
                 const result = target.fcm
-                  ? await sendFcm(env, target.fcm, { type: "ping", name: me.name, ts: String(now) })
+                  ? await sendFcm(env, target.fcm, { type: "ping", name: me.name, ts: String(now), to: m.id })
                   : await sendPush(target, payload, vapid, url.origin);
                 if (result.gone) {
                   // That device removed the app or revoked notifications.

@@ -20,6 +20,15 @@
             android:textColor="@color/muted"
             android:textSize="13sp" />
 
+        <!-- One chip per profile; shown when there is more than one -->
+        <LinearLayout
+            android:id="@+id/profiles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal"
+            android:visibility="gone" />
+
         <!-- First run: name and shared code -->
         <LinearLayout
             android:id="@+id/setup"
@@ -42,6 +51,28 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
+                android:text="Profile name (optional)"
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/profileLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/field"
+                android:hint="For example: Brother"
+                android:importantForAutofill="no"
+                android:inputType="textCapWords"
+                android:maxLength="20"
+                android:padding="14dp"
+                android:textColor="@color/ink"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:text="Your name"
                 android:textColor="@color/muted"
                 android:textSize="14sp" />
@@ -101,6 +132,18 @@
                 android:textColor="#2A1A05"
                 android:textSize="17sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/cancelSetup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:padding="12dp"
+                android:text="Cancel"
+                android:textColor="@color/muted"
+                android:textSize="15sp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <!-- The lamp -->
