@@ -35,6 +35,8 @@ class SendService : Service() {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf(startId)
             }
+            // A tap is a good moment to look for a newer build.
+            Updater.checkSoon(app)
         }
         return START_NOT_STICKY
     }

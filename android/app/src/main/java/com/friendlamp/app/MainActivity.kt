@@ -2,7 +2,10 @@ package com.friendlamp.app
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -35,6 +38,7 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.start).setOnClickListener { join() }
         findViewById<ImageView>(R.id.lamp).setOnClickListener { send() }
         findViewById<TextView>(R.id.reset).setOnClickListener { reset() }
+        findViewById<TextView>(R.id.update).setOnClickListener { updateTapped() }
     }
 
     override fun onResume() {
@@ -42,6 +46,7 @@ class MainActivity : Activity() {
         Lamp.onChange = { ui.post { render() } }
         Notifier.clear(this)
         ui.post(ticker)
+        Updater.checkSoon(this, force = true)
         if (Store(this).configured) {
             askForNotifications()
             background {
@@ -63,6 +68,7 @@ class MainActivity : Activity() {
         val store = Store(this)
         findViewById<View>(R.id.setup).visibility = if (store.configured) View.GONE else View.VISIBLE
         findViewById<View>(R.id.lampGroup).visibility = if (store.configured) View.VISIBLE else View.GONE
+        renderUpdate()
         if (!store.configured) return
 
         val other = store.otherName
@@ -95,6 +101,28 @@ class MainActivity : Activity() {
         val problem = store.lastError
         findViewById<TextView>(R.id.status).text =
             if (problem == null) pushStatus else "$pushStatus\n\nLast problem: $problem"
+    }
+
+    private fun renderUpdate() {
+        val view = findViewById<TextView>(R.id.update)
+        val status = Store(this).updateStatus ?: ("Build " + Updater.installedBuild(this))
+        if (Updater.allowed(this)) {
+            view.text = "$status Updates install automatically."
+            view.setTextColor(getColor(R.color.muted))
+        } else {
+            view.text = "$status\nTap here to allow automatic updates."
+            view.setTextColor(getColor(R.color.warm))
+        }
+    }
+
+    private fun updateTapped() {
+        if (Updater.allowed(this)) {
+            Updater.checkSoon(this, force = true)
+            toast("Checking for updates")
+        } else {
+            // Opens Android's "Install unknown apps" switch for FriendLamp.
+            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+        }
     }
 
     // ---------- Actions ----------

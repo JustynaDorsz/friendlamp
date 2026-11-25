@@ -92,8 +92,10 @@ object Push {
 object Notifier {
     private const val CHANNEL = "lamp"
     private const val CHANNEL_SENDING = "sending"
+    private const val CHANNEL_UPDATES = "updates"
     private const val ID = 1
     const val SENDING_ID = 2
+    private const val UPDATE_ID = 3
 
     fun createChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -104,6 +106,27 @@ object Notifier {
         sending.description = "Shown for a moment while a widget tap is being sent"
         sending.setShowBadge(false)
         manager.createNotificationChannel(sending)
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_UPDATES, "App updates", NotificationManager.IMPORTANCE_DEFAULT)
+        )
+    }
+
+    /** Shown only when Android insists on a confirmation before installing an update. */
+    @SuppressLint("MissingPermission")
+    fun updateReady(context: Context, confirm: Intent) {
+        val manager = NotificationManagerCompat.from(context)
+        if (!manager.areNotificationsEnabled()) return
+        val open = PendingIntent.getActivity(
+            context, 4, confirm, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_lamp)
+            .setContentTitle("FriendLamp update")
+            .setContentText("Tap to install the new version")
+            .setAutoCancel(true)
+            .setContentIntent(open)
+            .build()
+        manager.notify(UPDATE_ID, notification)
     }
 
     /** The brief notice Android requires while the widget tap is being sent. */

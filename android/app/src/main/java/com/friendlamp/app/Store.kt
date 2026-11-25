@@ -59,6 +59,13 @@ class Store(context: Context) {
         get() = string("lastError")
         set(v) = put("lastError", v)
 
+    var updateStatus: String?
+        get() = string("updateStatus")
+        set(v) = put("updateStatus", v)
+    var lastUpdateCheck: Long
+        get() = long("lastUpdateCheck")
+        set(v) = put("lastUpdateCheck", v)
+
     /** Forget the pairing but keep the device id. */
     fun reset() {
         val keep = id
