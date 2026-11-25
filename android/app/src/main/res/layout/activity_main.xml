@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.18"
+            android:text="FRIENDLAMP"
+            android:textColor="@color/muted"
+            android:textSize="13sp" />
+
+        <!-- First run: name and shared code -->
+        <LinearLayout
+            android:id="@+id/setup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Set up your lamp"
+                android:textColor="@color/ink"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Your name"
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/field"
+                android:hint="Exactly as on your other devices"
+                android:importantForAutofill="no"
+                android:inputType="textPersonName"
+                android:maxLength="30"
+                android:padding="14dp"
+                android:textColor="@color/ink"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Secret code (the same for both of you)"
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/field"
+                android:hint="At least 6 characters"
+                android:importantForAutofill="no"
+                android:inputType="textVisiblePassword|textNoSuggestions"
+                android:maxLength="100"
+                android:padding="14dp"
+                android:textColor="@color/ink"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/setupError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/error"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/start"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/button"
+                android:text="Start"
+                android:textAllCaps="false"
+                android:textColor="#2A1A05"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- The lamp -->
+        <LinearLayout
+            android:id="@+id/lampGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/lamp"
+                android:layout_width="240dp"
+                android:layout_height="240dp"
+                android:layout_marginTop="12dp"
+                android:contentDescription="Tell your friend you are thinking of them"
+                android:src="@drawable/lamp_unlit" />
+
+            <TextView
+                android:id="@+id/headline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/ink"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/latest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:textColor="@color/warm"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/history"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:textColor="@color/muted"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/mine"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:textColor="@color/muted"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:gravity="center"
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                android:text="Tap the lamp to send. For one-tap sending, add the FriendLamp widget: long-press the home screen, choose Widgets, pick FriendLamp."
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/reset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:padding="10dp"
+                android:text="Reset this phone"
+                android:textColor="@color/muted"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

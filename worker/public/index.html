@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FriendLamp</title>
+<meta name="theme-color" content="#14110f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FriendLamp">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #14110f;
+    --ink: #f4ece4;
+    --muted: #9c8f84;
+    --warm: #ffb347;
+    --line: #2e2823;
+    --glow: 0;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 20px);
+    text-align: center;
+    overflow-x: hidden;
+  }
+  header { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  main { flex: 1; width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+  [hidden] { display: none !important; }
+
+  /* Lamp */
+  .lamp {
+    position: relative;
+    width: min(56vw, 230px, 30vh);
+    aspect-ratio: 1;
+    border: 0;
+    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    background: radial-gradient(circle at 50% 42%, #3a322c, #211c18 70%);
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition: transform .15s ease;
+  }
+  .lamp:active { transform: scale(.96); }
+  .lamp::before, .lamp::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    opacity: var(--glow);
+    transition: opacity 1.2s ease;
+    pointer-events: none;
+  }
+  .lamp::before {
+    inset: 0;
+    background: radial-gradient(circle at 50% 42%, #fff3d6, #ffc66b 38%, #ff9a3d 72%, #e8791f);
+  }
+  .lamp::after {
+    inset: -45%;
+    background: radial-gradient(circle, rgba(255, 170, 70, .42), rgba(255, 150, 50, .12) 45%, transparent 68%);
+    z-index: -1;
+  }
+  .lamp.sending { animation: send .7s ease; }
+  @keyframes send {
+    0% { box-shadow: inset 0 0 0 1px var(--line), 0 0 0 0 rgba(255, 179, 71, .55); }
+    100% { box-shadow: inset 0 0 0 1px var(--line), 0 0 0 46px rgba(255, 179, 71, 0); }
+  }
+
+  h1 { margin: 0; font-size: 25px; font-weight: 600; line-height: 1.25; text-wrap: balance; }
+  .hint { margin: 6px 0 0; color: var(--muted); font-size: 16px; }
+  .history {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    max-height: 8.6em;
+    overflow-y: auto;
+    color: var(--muted);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .history li { padding: 2px 0; }
+  .history li:first-child { color: var(--warm); font-size: 18px; }
+  .mine { margin: 0; color: var(--muted); font-size: 15px; min-height: 1.45em; }
+
+  footer { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .note { margin: 0; color: var(--muted); font-size: 14px; text-wrap: pretty; }
+  button.primary, button.ghost {
+    font: inherit;
+    border-radius: 14px;
+    padding: 14px 20px;
+    width: 100%;
+    cursor: pointer;
+  }
+  button.primary { background: var(--warm); color: #2a1a05; border: 0; font-weight: 600; }
+  button.primary:disabled { opacity: .6; }
+  button.ghost { background: transparent; color: var(--muted); border: 0; font-size: 14px; padding: 8px; width: auto; }
+
+  label.switch { flex-direction: row; align-items: center; gap: 10px; text-align: left; font-size: 14px; color: var(--muted); cursor: pointer; }
+  label.switch input { width: 20px; height: 20px; padding: 0; accent-color: var(--warm); flex: none; }
+  .cover {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .cover p { margin: 0; }
+  .cover small { color: var(--muted); font-size: 14px; font-weight: 400; }
+  .cover .dot { width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle at 50% 42%, #fff3d6, #ffc66b 38%, #ff9a3d 72%, #e8791f); box-shadow: 0 0 60px rgba(255, 170, 70, .5); }
+
+  form { width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: left; }
+  label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
+  input {
+    font: inherit;
+    color: var(--ink);
+    background: #1d1916;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 13px 14px;
+    width: 100%;
+  }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--warm); outline-offset: 2px; }
+  .error { color: #ff8a7a; font-size: 14px; margin: 0; min-height: 1.45em; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    top: calc(env(safe-area-inset-top) + 52px);
+    transform: translate(-50%, -12px);
+    background: #2a2420;
+    color: var(--ink);
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity .25s, transform .25s;
+    pointer-events: none;
+    max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lamp, .lamp::before, .lamp::after, .toast { transition: none; }
+    .lamp.sending { animation: none; }
+  }
+</style>
+</head>
+<body>
+<header>FriendLamp</header>
+
+<!-- First run: name and shared code -->
+<main id="setup" hidden>
+  <h1>Set up your lamp</h1>
+  <form id="setupForm" autocomplete="off">
+    <label>Your name
+      <input id="name" maxlength="30" required placeholder="How your friend will see you">
+    </label>
+    <label>Secret code (the same on both phones)
+      <input id="code" minlength="6" maxlength="100" required autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="At least 6 characters">
+    </label>
+    <p class="error" id="setupError" role="alert"></p>
+    <button class="primary" id="setupButton" type="submit">Start</button>
+  </form>
+</main>
+
+<!-- The lamp -->
+<main id="lampView" hidden>
+  <button class="lamp" id="lamp" type="button" aria-label="Tell your friend you are thinking of them"></button>
+  <div>
+    <h1 id="headline" aria-live="polite"></h1>
+    <p class="hint" id="hint" hidden></p>
+    <ol class="history" id="history" aria-label="When your lamp was lit"></ol>
+  </div>
+  <p class="mine" id="mine"></p>
+</main>
+
+<footer id="footer" hidden>
+  <p class="note" id="notifyNote" hidden></p>
+  <button class="primary" id="notifyButton" type="button" hidden>Turn on notifications</button>
+  <label class="switch"><input type="checkbox" id="quickToggle"> Quick send: tapping the icon sends and closes</label>
+  <p class="note" id="quickHelp" hidden>To see the lamp, tap a notification, or long-press the icon and choose “Open lamp”. Tapping the screen while “Sent” shows keeps the app open.</p>
+  <button class="ghost" id="resetButton" type="button">Reset this phone</button>
+</footer>
+
+<div class="cover" id="quickCover" hidden>
+  <div class="dot"></div>
+  <p id="quickText"></p>
+  <small>Tap to stay open</small>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
