@@ -75,8 +75,11 @@ class SettingsActivity : Activity() {
                 " after the last tap."
 
         findViewById<TextView>(R.id.who).text =
-            if (store.configured) "Name: " + store.name + (store.otherName?.let { "\nConnected with: $it" } ?: "\nWaiting for your friend")
-            else "Not set up yet."
+            when {
+                !store.configured -> "Not set up yet."
+                store.otherName != null -> "Connected to the other phone."
+                else -> "Waiting for the other phone."
+            }
         findViewById<TextView>(R.id.push).text =
             "Notifications: " + store.pushStatus.ifEmpty { "open the app once to turn them on." }
         findViewById<View>(R.id.reset).visibility = if (store.configured) View.VISIBLE else View.GONE

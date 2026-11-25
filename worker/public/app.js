@@ -108,13 +108,13 @@
     let glow = 0;
 
     if (!other) {
-      headline = "Waiting for your friend";
-      hint = "Ask them to open FriendLamp and enter the same code, with their own name.";
+      headline = "Waiting for the other device";
+      hint = "Open FriendLamp there and enter the same code, with a different name.";
     } else if (!other.lastPing) {
-      headline = other.name + " hasn’t lit your lamp yet";
+      headline = "Nothing received yet";
     } else {
       const lit = Date.now() + clockOffset - other.lastPing < LIT_MS;
-      headline = (lit ? "Status check from " : "Last status check from ") + other.name;
+      headline = lit ? "Status check received" : "Last status check";
       times = other.history && other.history.length ? other.history : [other.lastPing];
       glow = lit ? 1 : 0;
     }
@@ -132,7 +132,7 @@
       if (list.children[i].textContent !== text) list.children[i].textContent = text;
     });
     $("mine").textContent =
-      other && state.me.lastPing ? "You lit " + other.name + "’s lamp " + ago(state.me.lastPing) : "";
+      other && state.me.lastPing ? "Sent: " + ago(state.me.lastPing) : "";
     document.documentElement.style.setProperty("--glow", glow.toFixed(3));
   }
 
@@ -174,10 +174,10 @@
     try {
       const res = await api("ping");
       setState(res);
-      if (!res.other) toast("Your friend hasn’t joined yet");
+      if (!res.other) toast("The other device hasn’t joined yet");
       else if (res.repeat) toast("Already sent a moment ago");
-      else if (res.sent) toast("Sent to " + res.other.name);
-      else if (!res.other.notifications) toast(res.other.name + " has notifications off, they’ll see it in the app");
+      else if (res.sent) toast("Sent");
+      else if (!res.other.notifications) toast("Sent. The other device has notifications off.");
       else toast("Saved, but the notification didn’t go through");
     } catch (err) {
       handleFailure(err);
@@ -218,7 +218,7 @@
   function quickClose(label) {
     const cover = $("quickCover");
     if (!cover.hidden) return;
-    $("quickText").textContent = label + (state && state.other ? " to " + state.other.name : "");
+    $("quickText").textContent = label;
     cover.hidden = false;
     const timer = setTimeout(() => {
       window.close();
@@ -293,7 +293,7 @@
     } else if (Notification.permission === "denied") {
       message = "Notifications are blocked for FriendLamp. Allow them in the site settings of this browser or phone.";
     } else if (Notification.permission === "default") {
-      message = "Get a notification when your friend thinks of you.";
+      message = "Get a notification for each status check.";
       showButton = true;
     } else if (state && !state.me.notifications && !subscribing) {
       showButton = true;

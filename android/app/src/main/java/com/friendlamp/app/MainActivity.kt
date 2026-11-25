@@ -80,22 +80,22 @@ class MainActivity : Activity() {
         }.ifEmpty { if (store.otherLastPing > 0L) listOf(store.otherLastPing) else emptyList() }
 
         findViewById<TextView>(R.id.headline).text = when {
-            other == null -> "Waiting for your friend"
+            other == null -> "Waiting for the other phone"
             color == null -> "Lamp is off"
             store.litBy == "me" -> "You sent a status check"
-            else -> "Status check from $other"
+            else -> "Status check received"
         }
         val latest = findViewById<TextView>(R.id.latest)
         latest.setTextColor(if (color != null && store.litBy != "me") store.friendColor else getColor(R.color.muted))
         latest.text = when {
-            other == null -> "Ask them to enter the same code, with their own name."
-            times.isNotEmpty() -> "$other: " + Lamp.whenText(times.first())
-            else -> "$other hasn’t sent anything yet"
+            other == null -> "Enter the same code there, with a different name."
+            times.isNotEmpty() -> "Received: " + Lamp.whenText(times.first())
+            else -> "Nothing received yet"
         }
         findViewById<TextView>(R.id.history).text =
             if (other == null) "" else times.drop(1).joinToString("\n") { Lamp.whenText(it) }
         findViewById<TextView>(R.id.mine).text =
-            if (store.myLastPing > 0L) "You: " + Lamp.whenText(store.myLastPing) else ""
+            if (store.myLastPing > 0L) "Sent: " + Lamp.whenText(store.myLastPing) else ""
 
         val problem = store.lastError
         val status = findViewById<TextView>(R.id.status)
@@ -150,10 +150,10 @@ class MainActivity : Activity() {
             }
             val other = state.optJSONObject("other")
             val message = when {
-                other == null -> "Your friend hasn’t joined yet"
+                other == null -> "The other phone hasn’t joined yet"
                 state.optBoolean("repeat") -> "Already sent a moment ago"
                 state.optBoolean("sent") -> "Sent"
-                !other.optBoolean("notifications") -> "Sent. " + other.optString("name") + " has notifications off."
+                !other.optBoolean("notifications") -> "Sent. The other phone has notifications off."
                 else -> "Saved, but the notification didn’t go through"
             }
             toast(message)
