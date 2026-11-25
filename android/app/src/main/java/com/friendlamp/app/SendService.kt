@@ -35,7 +35,16 @@ class SendService : Service() {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf(startId)
             }
-            // A tap is a good moment to look for a newer build.
+            // A tap is also a good moment to finish setting up notifications
+            // (if the server got its Firebase settings after the app was last opened)
+            // and to look for a newer build.
+            if (Store(app).fcmRegistered == null) {
+                try {
+                    Push.sync(app)
+                } catch (e: Exception) {
+                    Lamp.remember(app, "turning on notifications", e)
+                }
+            }
             Updater.checkSoon(app)
         }
         return START_NOT_STICKY
