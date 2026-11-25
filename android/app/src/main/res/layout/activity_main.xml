@@ -42,7 +42,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="Set up your lamp"
+                android:text="Set up"
                 android:textColor="@color/ink"
                 android:textSize="24sp"
                 android:textStyle="bold" />
@@ -160,7 +160,7 @@
                 android:layout_width="240dp"
                 android:layout_height="240dp"
                 android:layout_marginTop="12dp"
-                android:contentDescription="Tell your friend you are thinking of them"
+                android:contentDescription="Send a status check"
                 android:src="@drawable/lamp_unlit" />
 
             <TextView
@@ -211,7 +211,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:gravity="center"
-                android:text="Tap the lamp to send. For one-tap sending, add the Update widget to your home screen."
+                android:text="Tap the circle to send. For one-tap sending, add the Update widget to your home screen."
                 android:textColor="@color/muted"
                 android:textSize="14sp" />
 

@@ -1,7 +1,7 @@
 {
   "name": "Update",
   "short_name": "Update",
-  "description": "Tap to tell your friend you are thinking of them.",
+  "description": "Tap to send a status check.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -31,9 +31,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Open lamp",
-      "short_name": "Open lamp",
-      "description": "Open the lamp without sending",
+      "name": "Open",
+      "short_name": "Open",
+      "description": "Open without sending",
       "url": "/?view=1"
     }
   ]

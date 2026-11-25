@@ -87,7 +87,7 @@ class MainActivity : Activity() {
 
         findViewById<TextView>(R.id.headline).text = when {
             other == null -> "Waiting for the other phone"
-            color == null -> "Lamp is off"
+            color == null -> "No updates"
             store.litBy == "me" -> "You sent a status check"
             else -> "Status check received"
         }

@@ -166,7 +166,7 @@
 
 <!-- First run: name and shared code -->
 <main id="setup" hidden>
-  <h1>Set up your lamp</h1>
+  <h1>Set up</h1>
   <form id="setupForm" autocomplete="off">
     <label>Your name
       <input id="name" maxlength="30" required placeholder="How your friend will see you">
@@ -181,11 +181,11 @@
 
 <!-- The lamp -->
 <main id="lampView" hidden>
-  <button class="lamp" id="lamp" type="button" aria-label="Tell your friend you are thinking of them"></button>
+  <button class="lamp" id="lamp" type="button" aria-label="Send a status check"></button>
   <div>
     <h1 id="headline" aria-live="polite"></h1>
     <p class="hint" id="hint" hidden></p>
-    <ol class="history" id="history" aria-label="When your lamp was lit"></ol>
+    <ol class="history" id="history" aria-label="Times received"></ol>
   </div>
   <p class="mine" id="mine"></p>
 </main>
@@ -194,7 +194,7 @@
   <p class="note" id="notifyNote" hidden></p>
   <button class="primary" id="notifyButton" type="button" hidden>Turn on notifications</button>
   <label class="switch"><input type="checkbox" id="quickToggle"> Quick send: tapping the icon sends and closes</label>
-  <p class="note" id="quickHelp" hidden>To see the lamp, tap a notification, or long-press the icon and choose “Open lamp”. Tapping the screen while “Sent” shows keeps the app open.</p>
+  <p class="note" id="quickHelp" hidden>To see this screen, tap a notification, or long-press the icon and choose “Open”. Tapping the screen while “Sent” shows keeps the app open.</p>
   <button class="ghost" id="resetButton" type="button">Reset this phone</button>
 </footer>
 

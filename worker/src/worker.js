@@ -89,7 +89,7 @@ const latestPing = (rows) => rows.reduce((max, m) => Math.max(max, m.last_ping |
 // Splits the devices of a pair into "mine" (same name as this device) and "theirs".
 function sides(all, id) {
   const me = all.find((m) => m.id === id);
-  if (!me) throw new ApiError(403, "This device has not joined this lamp");
+  if (!me) throw new ApiError(403, "This device is not connected");
   const key = personKey(me.name);
   return {
     me,
@@ -217,7 +217,7 @@ async function handleApi(request, env, url) {
         .prepare(`UPDATE members SET subscription = ? WHERE pair = ? AND id = ?`)
         .bind(stored, pair, id)
         .run();
-      if (!res.meta.changes) throw new ApiError(403, "This device has not joined this lamp");
+      if (!res.meta.changes) throw new ApiError(403, "This device is not connected");
       return json({ ok: true });
     }
 

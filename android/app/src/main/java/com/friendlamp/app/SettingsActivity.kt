@@ -75,7 +75,7 @@ class SettingsActivity : Activity() {
             })
         }
         findViewById<TextView>(R.id.durationHint).text =
-            "The lamp goes grey " + (if (store.litMinutes < 60) "${store.litMinutes} minutes" else "${store.litMinutes / 60} h") +
+            "The circle goes grey " + (if (store.litMinutes < 60) "${store.litMinutes} minutes" else "${store.litMinutes / 60} h") +
                 " after the last tap."
 
         renderProfiles(store)

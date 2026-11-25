@@ -111,8 +111,8 @@ object Notifier {
 
     fun createChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        val channel = NotificationChannel(CHANNEL, "Thinking of you", NotificationManager.IMPORTANCE_HIGH)
-        channel.description = "When your friend lights your lamp"
+        val channel = NotificationChannel(CHANNEL, "Status checks", NotificationManager.IMPORTANCE_HIGH)
+        channel.description = "When a status check arrives"
         manager.createNotificationChannel(channel)
         val sending = NotificationChannel(CHANNEL_SENDING, "Sending", NotificationManager.IMPORTANCE_MIN)
         sending.description = "Shown for a moment while a widget tap is being sent"
