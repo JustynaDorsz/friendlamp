@@ -235,7 +235,7 @@ async function handleApi(request, env, url) {
 
         // Notify every device of the other person.
         // The notification text carries no names.
-        const payload = { title: "FriendLamp", body: "Status check", ts: now };
+        const payload = { title: "Update", body: "Status check", ts: now };
         const results = await Promise.all(
           theirs
             .filter((m) => m.subscription)

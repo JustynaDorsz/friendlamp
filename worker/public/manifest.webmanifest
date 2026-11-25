@@ -1,6 +1,6 @@
 {
-  "name": "FriendLamp",
-  "short_name": "FriendLamp",
+  "name": "Update",
+  "short_name": "Update",
   "description": "Tap to tell your friend you are thinking of them.",
   "id": "/",
   "start_url": "/",
@@ -33,7 +33,7 @@
     {
       "name": "Open lamp",
       "short_name": "Open lamp",
-      "description": "Open FriendLamp without sending",
+      "description": "Open the lamp without sending",
       "url": "/?view=1"
     }
   ]

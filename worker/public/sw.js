@@ -17,7 +17,7 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     (async () => {
-      await self.registration.showNotification(data.title || "FriendLamp", {
+      await self.registration.showNotification(data.title || "Update", {
         body: data.body || "Status check",
         icon: "icons/icon-192.png",
         badge: "icons/badge-96.png",

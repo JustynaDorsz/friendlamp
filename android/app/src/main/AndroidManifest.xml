@@ -16,7 +16,7 @@
         android:name=".App"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
-        android:label="FriendLamp"
+        android:label="Update"
         android:theme="@style/AppTheme">
 
         <activity

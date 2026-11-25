@@ -109,7 +109,7 @@
 
     if (!other) {
       headline = "Waiting for the other device";
-      hint = "Open FriendLamp there and enter the same code, with a different name.";
+      hint = "Open Update there and enter the same code, with a different name.";
     } else if (!other.lastPing) {
       headline = "Nothing received yet";
     } else {
@@ -288,10 +288,10 @@
       const installed = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
       message =
         ios && !installed
-          ? "To get notifications on iPhone: tap Share, then “Add to Home Screen”, and open FriendLamp from there."
+          ? "To get notifications on iPhone: tap Share, then “Add to Home Screen”, and open Update from there."
           : "This browser can’t show notifications.";
     } else if (Notification.permission === "denied") {
-      message = "Notifications are blocked for FriendLamp. Allow them in the site settings of this browser or phone.";
+      message = "Notifications are blocked for this app. Allow them in the site settings of this browser or phone.";
     } else if (Notification.permission === "default") {
       message = "Get a notification for each status check.";
       showButton = true;

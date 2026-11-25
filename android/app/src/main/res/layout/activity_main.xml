@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:letterSpacing="0.18"
-            android:text="FRIENDLAMP"
+            android:text="UPDATE"
             android:textColor="@color/muted"
             android:textSize="13sp" />
 
@@ -213,7 +213,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:gravity="center"
-                android:text="Tap the lamp to send. For one-tap sending, add the FriendLamp widget to your home screen."
+                android:text="Tap the lamp to send. For one-tap sending, add the Update widget to your home screen."
                 android:textColor="@color/muted"
                 android:textSize="14sp" />
 
