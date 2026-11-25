@@ -34,7 +34,7 @@ class PushService : FirebaseMessagingService() {
         val name = data["name"] ?: "Your friend"
         val timestamp = data["ts"]?.toLongOrNull() ?: System.currentTimeMillis()
         Lamp.received(applicationContext, name, timestamp, message.sentTime)
-        Notifier.show(applicationContext, name)
+        Notifier.show(applicationContext)
     }
 }
 
@@ -69,14 +69,14 @@ object Push {
         if (store.fcmConfig == null) {
             val config = Api.request("GET", "fcm-config", null)
             if (!config.optBoolean("configured")) {
-                return "Instant notifications are not set up on the server yet. The widget still sends, and checks for news about every 30 minutes."
+                return "Not set up on the server yet."
             }
             store.fcmConfig = config.toString()
         }
         if (!init(context)) return "Could not start notifications."
         val token = Tasks.await(FirebaseMessaging.getInstance().token, 20, TimeUnit.SECONDS)
         register(context, token)
-        return "Notifications are on for this device."
+        return "On for this device."
     }
 
     fun register(context: Context, token: String) {
@@ -142,7 +142,7 @@ object Notifier {
 
     /** Shows the notification; it removes itself when the lamp goes dark. */
     @SuppressLint("MissingPermission")
-    fun show(context: Context, name: String) {
+    fun show(context: Context) {
         val manager = NotificationManagerCompat.from(context)
         if (!manager.areNotificationsEnabled()) return
         val open = PendingIntent.getActivity(
@@ -152,9 +152,9 @@ object Notifier {
         val remaining = maxOf(5_000L, Store(context).litUntil - System.currentTimeMillis())
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_lamp)
-            .setColor(0xFFFFB347.toInt())
+            .setColor(Store(context).friendColor)
             .setContentTitle("FriendLamp")
-            .setContentText("$name is thinking of you")
+            .setContentText("Status check")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setAutoCancel(true)

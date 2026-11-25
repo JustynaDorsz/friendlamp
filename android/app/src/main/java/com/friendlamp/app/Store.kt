@@ -11,6 +11,8 @@ class Store(context: Context) {
     private fun put(key: String, value: String?) = prefs.edit().putString(key, value).apply()
     private fun long(key: String): Long = prefs.getLong(key, 0L)
     private fun put(key: String, value: Long) = prefs.edit().putLong(key, value).apply()
+    private fun int(key: String, fallback: Int): Int = prefs.getInt(key, fallback)
+    private fun put(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
 
     /** A random id for this installation; it identifies the device to the server. */
     val id: String
@@ -40,12 +42,52 @@ class Store(context: Context) {
         get() = string("history") ?: "[]"
         set(v) = put("history", v)
 
-    /** Phone-clock time until which the lamp is lit. */
-    var litUntil: Long
-        get() = long("litUntil")
-        set(v) = put("litUntil", v)
+    // ---------- Settings ----------
+
+    /** The lamp color after my own tap. */
+    var myColor: Int
+        get() = int("myColor", Config.DEFAULT_MY_COLOR)
+        set(v) = put("myColor", v)
+
+    /** The lamp color after the other person's tap. */
+    var friendColor: Int
+        get() = int("friendColor", Config.DEFAULT_FRIEND_COLOR)
+        set(v) = put("friendColor", v)
+
+    /** How long the lamp stays lit, in minutes. */
+    var litMinutes: Int
+        get() = int("litMinutes", Config.DEFAULT_LIT_MINUTES)
+        set(v) = put("litMinutes", v)
+    val litMs: Long
+        get() = litMinutes * 60_000L
+
+    // ---------- Lamp state ----------
+
+    /** Who lit the lamp last: "me", "other", or "" for nobody. */
+    var litBy: String
+        get() = string("litBy") ?: ""
+        set(v) = put("litBy", v)
+
+    /** Phone-clock time of the tap that lit the lamp. */
+    var litAt: Long
+        get() = long("litAt")
+        set(v) = put("litAt", v)
+    val litUntil: Long
+        get() = litAt + litMs
     val lit: Boolean
-        get() = System.currentTimeMillis() < litUntil
+        get() = litBy.isNotEmpty() && litAt > 0L && System.currentTimeMillis() < litUntil
+
+    /** The color to show now, or null when the lamp is off. */
+    val lampColor: Int?
+        get() = when {
+            !configured || !lit -> null
+            litBy == "me" -> myColor
+            else -> friendColor
+        }
+
+    var pushStatus: String
+        get() = string("pushStatus") ?: ""
+        set(v) = put("pushStatus", v)
 
     var fcmConfig: String?
         get() = string("fcmConfig")
@@ -66,9 +108,17 @@ class Store(context: Context) {
         get() = long("lastUpdateCheck")
         set(v) = put("lastUpdateCheck", v)
 
-    /** Forget the pairing but keep the device id. */
+    /** Forget the pairing but keep the device id and the settings. */
     fun reset() {
-        val keep = id
-        prefs.edit().clear().putString("id", keep).apply()
+        val keepId = id
+        val mine = myColor
+        val friend = friendColor
+        val minutes = litMinutes
+        prefs.edit().clear()
+            .putString("id", keepId)
+            .putInt("myColor", mine)
+            .putInt("friendColor", friend)
+            .putInt("litMinutes", minutes)
+            .apply()
     }
 }

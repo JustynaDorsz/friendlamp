@@ -40,7 +40,7 @@ class SendService : Service() {
             // and to look for a newer build.
             if (Store(app).fcmRegistered == null) {
                 try {
-                    Push.sync(app)
+                    Store(app).pushStatus = Push.sync(app)
                 } catch (e: Exception) {
                     Lamp.remember(app, "turning on notifications", e)
                 }

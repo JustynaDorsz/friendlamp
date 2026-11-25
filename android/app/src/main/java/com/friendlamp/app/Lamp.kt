@@ -26,20 +26,29 @@ object Lamp {
         val store = Store(context)
         // Server times are converted to this phone's clock.
         val skew = System.currentTimeMillis() - state.optLong("now", System.currentTimeMillis())
-        store.myLastPing = state.optJSONObject("me")?.optLong("lastPing", 0L) ?: 0L
+        val mine = state.optJSONObject("me")?.optLong("lastPing", 0L) ?: 0L
+        store.myLastPing = mine
 
         val other = state.optJSONObject("other")
+        val theirs = other?.optLong("lastPing", 0L) ?: 0L
         if (other == null) {
             store.otherName = null
             store.otherLastPing = 0L
             store.history = "[]"
-            store.litUntil = 0L
         } else {
-            val last = other.optLong("lastPing", 0L)
             store.otherName = other.optString("name")
-            store.otherLastPing = last
+            store.otherLastPing = theirs
             store.history = (other.optJSONArray("history") ?: JSONArray()).toString()
-            store.litUntil = if (last > 0L) last + skew + Config.LIT_MS else 0L
+        }
+
+        // The most recent tap decides the color: mine or the other person's.
+        val latest = maxOf(mine, theirs)
+        if (latest > 0L) {
+            store.litBy = if (theirs >= mine) "other" else "me"
+            store.litAt = latest + skew
+        } else {
+            store.litBy = ""
+            store.litAt = 0L
         }
         changed(context)
     }
@@ -50,7 +59,8 @@ object Lamp {
         val now = System.currentTimeMillis()
         store.otherName = name
         store.otherLastPing = timestamp
-        store.litUntil = minOf(if (sentAt > 0L) sentAt else now, now) + Config.LIT_MS
+        store.litBy = "other"
+        store.litAt = minOf(if (sentAt > 0L) sentAt else now, now)
         val old = try {
             JSONArray(store.history)
         } catch (e: Exception) {

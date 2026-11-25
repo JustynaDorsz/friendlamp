@@ -83,21 +83,20 @@ class LampWidget : AppWidgetProvider() {
             if (ids.isEmpty()) return
 
             val store = Store(app)
-            val lit = store.configured && store.lit
+            val color = store.lampColor
             val label = flash ?: when {
                 !store.configured -> "Tap to set up"
-                lit -> (store.otherName ?: "") + " · " + Lamp.clock(store.otherLastPing)
-                store.otherLastPing > 0L -> Lamp.whenText(store.otherLastPing).substringBefore(" · ")
-                else -> "FriendLamp"
+                color != null -> Lamp.clock(store.litAt)
+                else -> ""
             }
 
             val views = RemoteViews(app.packageName, R.layout.widget_lamp)
-            views.setImageViewResource(R.id.widget_lamp, if (lit) R.drawable.lamp_lit else R.drawable.lamp_unlit)
+            views.setImageViewBitmap(R.id.widget_lamp, LampArt.bitmap(color, 256))
             views.setTextViewText(R.id.widget_label, label)
             views.setOnClickPendingIntent(R.id.widget_root, clickIntent(app, store.configured))
             manager.updateAppWidget(ids, views)
 
-            if (lit) scheduleUnlit(app, store.litUntil)
+            if (color != null) scheduleUnlit(app, store.litUntil)
         }
 
         private fun clickIntent(context: Context, configured: Boolean): PendingIntent {

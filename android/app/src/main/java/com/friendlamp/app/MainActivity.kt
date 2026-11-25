@@ -4,8 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -28,8 +26,6 @@ class MainActivity : Activity() {
             ui.postDelayed(this, 5000)
         }
     }
-    private var pushStatus = ""
-    private var resetArmedUntil = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,8 +33,9 @@ class MainActivity : Activity() {
 
         findViewById<Button>(R.id.start).setOnClickListener { join() }
         findViewById<ImageView>(R.id.lamp).setOnClickListener { send() }
-        findViewById<TextView>(R.id.reset).setOnClickListener { reset() }
-        findViewById<TextView>(R.id.update).setOnClickListener { updateTapped() }
+        findViewById<TextView>(R.id.settings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
     }
 
     override fun onResume() {
@@ -68,61 +65,42 @@ class MainActivity : Activity() {
         val store = Store(this)
         findViewById<View>(R.id.setup).visibility = if (store.configured) View.GONE else View.VISIBLE
         findViewById<View>(R.id.lampGroup).visibility = if (store.configured) View.VISIBLE else View.GONE
-        renderUpdate()
         if (!store.configured) return
 
         val other = store.otherName
-        val last = store.otherLastPing
-        val lit = store.lit
-        findViewById<ImageView>(R.id.lamp).setImageResource(if (lit) R.drawable.lamp_lit else R.drawable.lamp_unlit)
+        val color = store.lampColor
+        val size = (240 * resources.displayMetrics.density).toInt()
+        findViewById<ImageView>(R.id.lamp).setImageBitmap(LampArt.bitmap(color, size))
 
         val times = try {
             val array = JSONArray(store.history)
             (0 until array.length()).map { array.optLong(it) }.filter { it > 0L }
         } catch (e: Exception) {
             emptyList()
-        }.ifEmpty { if (last > 0L) listOf(last) else emptyList() }
+        }.ifEmpty { if (store.otherLastPing > 0L) listOf(store.otherLastPing) else emptyList() }
 
         findViewById<TextView>(R.id.headline).text = when {
             other == null -> "Waiting for your friend"
-            last == 0L -> "$other hasn’t lit your lamp yet"
-            lit -> "$other is thinking of you"
-            else -> "$other was thinking of you"
+            color == null -> "Lamp is off"
+            store.litBy == "me" -> "You sent a status check"
+            else -> "Status check from $other"
         }
-        findViewById<TextView>(R.id.latest).text = when {
+        val latest = findViewById<TextView>(R.id.latest)
+        latest.setTextColor(if (color != null && store.litBy != "me") store.friendColor else getColor(R.color.muted))
+        latest.text = when {
             other == null -> "Ask them to enter the same code, with their own name."
-            times.isNotEmpty() -> Lamp.whenText(times.first())
-            else -> ""
+            times.isNotEmpty() -> "$other: " + Lamp.whenText(times.first())
+            else -> "$other hasn’t sent anything yet"
         }
         findViewById<TextView>(R.id.history).text =
             if (other == null) "" else times.drop(1).joinToString("\n") { Lamp.whenText(it) }
         findViewById<TextView>(R.id.mine).text =
-            if (other != null && store.myLastPing > 0L) "You lit $other’s lamp " + Lamp.whenText(store.myLastPing) else ""
+            if (store.myLastPing > 0L) "You: " + Lamp.whenText(store.myLastPing) else ""
+
         val problem = store.lastError
-        findViewById<TextView>(R.id.status).text =
-            if (problem == null) pushStatus else "$pushStatus\n\nLast problem: $problem"
-    }
-
-    private fun renderUpdate() {
-        val view = findViewById<TextView>(R.id.update)
-        val status = Store(this).updateStatus ?: ("Build " + Updater.installedBuild(this))
-        if (Updater.allowed(this)) {
-            view.text = "$status Updates install automatically."
-            view.setTextColor(getColor(R.color.muted))
-        } else {
-            view.text = "$status\nTap here to allow automatic updates."
-            view.setTextColor(getColor(R.color.warm))
-        }
-    }
-
-    private fun updateTapped() {
-        if (Updater.allowed(this)) {
-            Updater.checkSoon(this, force = true)
-            toast("Checking for updates")
-        } else {
-            // Opens Android's "Install unknown apps" switch for FriendLamp.
-            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
-        }
+        val status = findViewById<TextView>(R.id.status)
+        status.text = if (problem == null) "" else "Last problem: $problem"
+        status.visibility = if (problem == null) View.GONE else View.VISIBLE
     }
 
     // ---------- Actions ----------
@@ -174,34 +152,11 @@ class MainActivity : Activity() {
             val message = when {
                 other == null -> "Your friend hasn’t joined yet"
                 state.optBoolean("repeat") -> "Already sent a moment ago"
-                state.optBoolean("sent") -> "Sent to " + other.optString("name")
-                !other.optBoolean("notifications") -> other.optString("name") + " has notifications off"
+                state.optBoolean("sent") -> "Sent"
+                !other.optBoolean("notifications") -> "Sent. " + other.optString("name") + " has notifications off."
                 else -> "Saved, but the notification didn’t go through"
             }
             toast(message)
-        }
-    }
-
-    private fun reset() {
-        val label = findViewById<TextView>(R.id.reset)
-        if (System.currentTimeMillis() > resetArmedUntil) {
-            resetArmedUntil = System.currentTimeMillis() + 4000
-            label.text = "Tap again to disconnect this phone"
-            ui.postDelayed({ label.text = "Reset this phone" }, 4000)
-            return
-        }
-        resetArmedUntil = 0L
-        label.text = "Reset this phone"
-        Lamp.io.execute {
-            try {
-                Api.call(this, "leave")
-            } catch (e: Exception) {
-                // Leaving locally is enough.
-            }
-            Store(this).reset()
-            pushStatus = ""
-            Lamp.changed(this)
-            ui.post { render() }
         }
     }
 
@@ -227,12 +182,11 @@ class MainActivity : Activity() {
     }
 
     private fun syncPush() {
-        pushStatus = try {
+        Store(this).pushStatus = try {
             Push.sync(this)
         } catch (e: Exception) {
-            "Couldn’t turn on notifications: " + (e.message ?: e.javaClass.simpleName)
+            "Couldn’t turn on: " + (e.message ?: e.javaClass.simpleName)
         }
-        ui.post { render() }
     }
 
     private fun askForNotifications() {
