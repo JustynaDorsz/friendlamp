@@ -118,6 +118,11 @@ class Store(context: Context, profileKey: String? = null) {
         get() = string(mine("history")) ?: "[]"
         set(v) = put(mine("history"), v)
 
+    /** Times (newest first) when I sent, as a JSON array. */
+    var myHistory: String
+        get() = string(mine("myHistory")) ?: "[]"
+        set(v) = put(mine("myHistory"), v)
+
     /** Who lit the lamp last: "me", "other", or "" for nobody. */
     var litBy: String
         get() = string(mine("litBy")) ?: ""
@@ -175,6 +180,11 @@ class Store(context: Context, profileKey: String? = null) {
         get() = litMinutes * 60_000L
 
     // ---------- App state ----------
+
+    /** This phone's clock minus the server's clock, so "ago" is right to the second. */
+    var clockSkew: Long
+        get() = long("clockSkew")
+        set(v) = put("clockSkew", v)
 
     var pushStatus: String
         get() = string("pushStatus") ?: ""

@@ -98,26 +98,36 @@ function sides(all, id) {
   };
 }
 
+// The recent ping times of one person, newest first.
+async function historyOf(db, pair, person) {
+  const { results } = await db
+    .prepare(`SELECT ts FROM pings WHERE pair = ? AND person = ? ORDER BY ts DESC LIMIT ?`)
+    .bind(pair, person, HISTORY_SHOWN)
+    .all();
+  return results.map((r) => r.ts);
+}
+
 async function stateFor(db, pair, all, id, key) {
   const { me, mine, theirs } = sides(all, id);
   let other = null;
   if (theirs.length) {
     const newest = theirs.reduce((a, b) => ((b.last_ping || 0) > (a.last_ping || 0) ? b : a));
-    const { results } = await db
-      .prepare(`SELECT ts FROM pings WHERE pair = ? AND person = ? ORDER BY ts DESC LIMIT ?`)
-      .bind(pair, personKey(newest.name), HISTORY_SHOWN)
-      .all();
     other = {
       name: newest.name,
       lastPing: latestPing(theirs),
       notifications: theirs.some((m) => !!m.subscription),
-      history: results.map((r) => r.ts),
+      history: await historyOf(db, pair, personKey(newest.name)),
     };
   }
   return {
     now: Date.now(),
     key,
-    me: { name: me.name, lastPing: latestPing(mine), notifications: !!me.subscription },
+    me: {
+      name: me.name,
+      lastPing: latestPing(mine),
+      notifications: !!me.subscription,
+      history: await historyOf(db, pair, personKey(me.name)),
+    },
     other,
   };
 }

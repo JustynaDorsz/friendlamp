@@ -26,8 +26,15 @@ object Lamp {
         val store = Store(context, profile)
         // Server times are converted to this phone's clock.
         val skew = System.currentTimeMillis() - state.optLong("now", System.currentTimeMillis())
-        val mine = state.optJSONObject("me")?.optLong("lastPing", 0L) ?: 0L
+        store.clockSkew = skew
+        val me = state.optJSONObject("me")
+        val mine = me?.optLong("lastPing", 0L) ?: 0L
         store.myLastPing = mine
+
+        // My own times: the server's list when it sends one, otherwise what this phone has seen.
+        val serverSent = me?.optJSONArray("history")
+        val sent = if (serverSent != null) times(serverSent.toString()) else times(store.myHistory) + mine
+        store.myHistory = JSONArray(sent.filter { it > 0L }.distinct().sortedDescending().take(20)).toString()
 
         val other = state.optJSONObject("other")
         val theirs = other?.optLong("lastPing", 0L) ?: 0L
@@ -91,6 +98,14 @@ object Lamp {
         current.history = updated.toString()
         changed(context)
         return true
+    }
+
+    /** Reads a stored JSON array of times. */
+    fun times(json: String): List<Long> = try {
+        val array = JSONArray(json)
+        (0 until array.length()).map { array.optLong(it) }.filter { it > 0L }
+    } catch (e: Exception) {
+        emptyList()
     }
 
     fun changed(context: Context) {
@@ -183,10 +198,16 @@ object Lamp {
         applyState(context, Api.call(context, "state", null, 8000, store.profile), store.profile)
     }
 
-    /** "5 min ago", or the clock time / date for older entries. */
-    fun whenText(timestamp: Long): String {
-        val seconds = maxOf(0L, (System.currentTimeMillis() - timestamp) / 1000L)
-        if (seconds < 45) return "just now"
+    /**
+     * How long ago a server time was. With seconds for the first four minutes
+     * ("45 s ago", "3 min 45 s ago"), then "5 min ago", then the clock time or date.
+     * `skew` is this phone's clock minus the server's.
+     */
+    fun whenText(timestamp: Long, skew: Long = 0L): String {
+        val seconds = maxOf(0L, (System.currentTimeMillis() - skew - timestamp) / 1000L)
+        if (seconds < 5) return "just now"
+        if (seconds < 60) return "$seconds s ago"
+        if (seconds < 240) return "${seconds / 60} min ${seconds % 60} s ago"
         val minutes = (seconds + 30) / 60
         if (minutes < 60) return "$minutes min ago"
         val date = Date(timestamp)
