@@ -44,6 +44,8 @@ class LampWidget : AppWidgetProvider() {
             render(context)
             return
         }
+        // Answering with a tap means the incoming notification has been seen: remove it.
+        Notifier.clear(context)
         render(context, "Sending\u2026")
         // Preferred: a short foreground service. The system lets it use the network
         // even when the app is in the background with battery or data saver on.

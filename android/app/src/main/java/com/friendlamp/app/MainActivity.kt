@@ -238,6 +238,7 @@ class MainActivity : Activity() {
     }
 
     private fun send() {
+        Notifier.clear(this)
         background {
             val profile = Store(this).profile
             val state = Api.call(this, "ping", null, 8000, profile)
